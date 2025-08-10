@@ -27,6 +27,7 @@ export type AuthUser = {
   id: string
   email: string
   name?: string
+  role?: string
 }
 
 export async function signUp(email: string, password: string) {
@@ -41,6 +42,38 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
+  // First try local admin authentication
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      // Return format consistent with Supabase
+      return { 
+        data: { 
+          user: { 
+            id: result.user.id, 
+            email: result.user.email,
+            user_metadata: { 
+              name: `${result.user.firstName || ''} ${result.user.lastName || ''}`.trim(),
+              role: result.user.role 
+            }
+          } 
+        }, 
+        error: null 
+      };
+    }
+  } catch (localError) {
+    console.log('Local auth failed, trying Supabase:', localError);
+  }
+
+  // Fall back to Supabase authentication if configured
   if (!supabase) {
     return { data: null, error: { message: 'Authentication service not configured. Please contact support to sign in.' } }
   }

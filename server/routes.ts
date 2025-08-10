@@ -4,6 +4,50 @@ import { storage } from "./storage";
 import { insertProductSchema, insertCategorySchema, insertBrandSchema, insertBlogPostSchema, insertTestimonialSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication API
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      if (!user.isActive) {
+        return res.status(401).json({ message: "Account is disabled" });
+      }
+      
+      // Return user data without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ 
+        user: userWithoutPassword,
+        message: "Login successful"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Authentication failed" });
+    }
+  });
+
+  app.get("/api/auth/user/:id", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Categories API
   app.get("/api/categories", async (req, res) => {
     try {
