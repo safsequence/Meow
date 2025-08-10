@@ -13,15 +13,11 @@ import {
   type InsertTestimonial
 } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { db } from "./db";
-import { users, categories, brands, products, blogPosts, testimonials } from "@shared/schema";
-import { eq, and, or, like, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // Categories
@@ -62,57 +58,195 @@ export interface IStorage {
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
 }
 
-// Using DatabaseStorage directly
+export class MemStorage implements IStorage {
+  private users: Map<string, User>;
+  private categories: Map<string, Category>;
+  private brands: Map<string, Brand>;
+  private products: Map<string, Product>;
+  private blogPosts: Map<string, BlogPost>;
+  private testimonials: Map<string, Testimonial>;
 
-export class DatabaseStorage implements IStorage {
+  constructor() {
+    this.users = new Map();
+    this.categories = new Map();
+    this.brands = new Map();
+    this.products = new Map();
+    this.blogPosts = new Map();
+    this.testimonials = new Map();
+    
+    // Initialize with sample data
+    this.initializeSampleData();
+  }
+
+  private initializeSampleData() {
+    // Sample categories
+    const catFoodCategory: Category = {
+      id: randomUUID(),
+      name: "Cat Food",
+      slug: "cat-food",
+      description: "Premium food for cats of all ages",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      image: null,
+      parentId: null
+    };
+    
+    const dogFoodCategory: Category = {
+      id: randomUUID(),
+      name: "Dog Food", 
+      slug: "dog-food",
+      description: "Nutritious food for dogs of all sizes",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      image: null,
+      parentId: null
+    };
+    
+    this.categories.set(catFoodCategory.id, catFoodCategory);
+    this.categories.set(dogFoodCategory.id, dogFoodCategory);
+
+    // Sample brands
+    const royalCanin: Brand = {
+      id: randomUUID(),
+      name: "Royal Canin",
+      slug: "royal-canin",
+      description: "Premium pet nutrition brand",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      logo: null
+    };
+    
+    this.brands.set(royalCanin.id, royalCanin);
+
+    // Sample products
+    const premiumCatFood: Product = {
+      id: randomUUID(),
+      name: "Premium Dry Cat Food (5kg)",
+      description: "High-quality dry cat food with real chicken and essential nutrients",
+      price: "2400.00",
+      categoryId: catFoodCategory.id,
+      brandId: royalCanin.id,
+      image: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300",
+      rating: "5.00",
+      reviews: 124,
+      stockStatus: "In Stock",
+      stockQuantity: 50,
+      tags: ["premium", "bestseller", "chicken"],
+      isBestseller: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      originalPrice: null,
+      images: null,
+      features: null,
+      specifications: null,
+      isNew: false,
+      isOnSale: false,
+      discount: 0
+    };
+    
+    this.products.set(premiumCatFood.id, premiumCatFood);
+
+    // Sample blog posts
+    const blogPost1: BlogPost = {
+      id: randomUUID(),
+      title: "10 Essential Tips for New Pet Owners",
+      slug: "essential-tips-new-pet-owners",
+      excerpt: "Starting your journey as a pet parent? Here are the essential tips every new pet owner should know.",
+      content: "Full blog content here...",
+      image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
+      author: "Dr. Sarah Ahmed",
+      publishedAt: new Date("2024-03-15"),
+      tags: ["tips", "new-owners", "pets"],
+      isPublished: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.blogPosts.set(blogPost1.id, blogPost1);
+
+    // Sample testimonials
+    const testimonial1: Testimonial = {
+      id: randomUUID(),
+      name: "Sarah Rahman",
+      role: "Cat Parent",
+      location: "Savar",
+      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+      text: "Meow Meow Pet Shop has the best quality pet food in Savar! My cat Luna loves their premium kibble and the delivery is always on time. Highly recommended!",
+      rating: 5,
+      isApproved: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.testimonials.set(testimonial1.id, testimonial1);
+  }
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
+    return Array.from(this.users.values()).find(
+      (user) => user.username === username,
+    );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const id = randomUUID();
+    const user: User = { 
+      ...insertUser, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.users.set(id, user);
     return user;
   }
 
   // Category methods
   async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories).where(eq(categories.isActive, true));
+    return Array.from(this.categories.values()).filter(cat => cat.isActive);
   }
 
   async getCategory(id: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.id, id));
-    return category || undefined;
+    return this.categories.get(id);
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const [category] = await db.insert(categories).values(insertCategory).returning();
+    const id = randomUUID();
+    const category: Category = {
+      ...insertCategory,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.categories.set(id, category);
     return category;
   }
 
   // Brand methods
   async getBrands(): Promise<Brand[]> {
-    return await db.select().from(brands).where(eq(brands.isActive, true));
+    return Array.from(this.brands.values()).filter(brand => brand.isActive);
   }
 
   async getBrand(id: string): Promise<Brand | undefined> {
-    const [brand] = await db.select().from(brands).where(eq(brands.id, id));
-    return brand || undefined;
+    return this.brands.get(id);
   }
 
   async createBrand(insertBrand: InsertBrand): Promise<Brand> {
-    const [brand] = await db.insert(brands).values(insertBrand).returning();
+    const id = randomUUID();
+    const brand: Brand = {
+      ...insertBrand,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.brands.set(id, brand);
     return brand;
   }
 
@@ -127,117 +261,138 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<Product[]> {
-    let query = db.select().from(products).where(eq(products.isActive, true));
+    let products = Array.from(this.products.values()).filter(p => p.isActive);
 
     if (filters) {
-      const conditions = [eq(products.isActive, true)];
-      
       if (filters.categoryId) {
-        conditions.push(eq(products.categoryId, filters.categoryId));
+        products = products.filter(p => p.categoryId === filters.categoryId);
       }
       if (filters.brandId) {
-        conditions.push(eq(products.brandId, filters.brandId));
+        products = products.filter(p => p.brandId === filters.brandId);
       }
       if (filters.isNew !== undefined) {
-        conditions.push(eq(products.isNew, filters.isNew));
+        products = products.filter(p => p.isNew === filters.isNew);
       }
       if (filters.isBestseller !== undefined) {
-        conditions.push(eq(products.isBestseller, filters.isBestseller));
+        products = products.filter(p => p.isBestseller === filters.isBestseller);
       }
       if (filters.isOnSale !== undefined) {
-        conditions.push(eq(products.isOnSale, filters.isOnSale));
+        products = products.filter(p => p.isOnSale === filters.isOnSale);
       }
       if (filters.search) {
-        conditions.push(
-          or(
-            like(products.name, `%${filters.search}%`),
-            like(products.description, `%${filters.search}%`)
-          )!
+        const searchLower = filters.search.toLowerCase();
+        products = products.filter(p => 
+          p.name.toLowerCase().includes(searchLower) ||
+          p.description?.toLowerCase().includes(searchLower)
         );
       }
-
-      query = query.where(and(...conditions));
       
       if (filters.offset) {
-        query = query.offset(filters.offset);
+        products = products.slice(filters.offset);
       }
       if (filters.limit) {
-        query = query.limit(filters.limit);
+        products = products.slice(0, filters.limit);
       }
     }
 
-    return await query;
+    return products;
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product || undefined;
+    return this.products.get(id);
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const [product] = await db.insert(products).values(insertProduct).returning();
+    const id = randomUUID();
+    const product: Product = {
+      ...insertProduct,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.products.set(id, product);
     return product;
   }
 
   async updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined> {
-    const [product] = await db.update(products)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(products.id, id))
-      .returning();
-    return product || undefined;
+    const existingProduct = this.products.get(id);
+    if (!existingProduct) {
+      return undefined;
+    }
+    
+    const updatedProduct: Product = {
+      ...existingProduct,
+      ...updates,
+      id, // ensure id doesn't change
+      updatedAt: new Date()
+    };
+    
+    this.products.set(id, updatedProduct);
+    return updatedProduct;
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id));
-    return result.count > 0;
+    return this.products.delete(id);
   }
 
   // Blog post methods
   async getBlogPosts(published?: boolean): Promise<BlogPost[]> {
-    let query = db.select().from(blogPosts);
-    
+    let posts = Array.from(this.blogPosts.values());
     if (published !== undefined) {
-      query = query.where(eq(blogPosts.isPublished, published));
+      posts = posts.filter(p => p.isPublished === published);
     }
-    
-    return await query.orderBy(desc(blogPosts.publishedAt));
+    return posts.sort((a, b) => 
+      new Date(b.publishedAt || b.createdAt).getTime() - 
+      new Date(a.publishedAt || a.createdAt).getTime()
+    );
   }
 
   async getBlogPost(id: string): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
-    return post || undefined;
+    return this.blogPosts.get(id);
   }
 
   async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
-    return post || undefined;
+    return Array.from(this.blogPosts.values()).find(p => p.slug === slug);
   }
 
   async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
-    const [post] = await db.insert(blogPosts).values(insertPost).returning();
+    const id = randomUUID();
+    const post: BlogPost = {
+      ...insertPost,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.blogPosts.set(id, post);
     return post;
   }
 
   // Testimonial methods
   async getTestimonials(approved?: boolean): Promise<Testimonial[]> {
-    let query = db.select().from(testimonials);
-    
+    let testimonials = Array.from(this.testimonials.values());
     if (approved !== undefined) {
-      query = query.where(eq(testimonials.isApproved, approved));
+      testimonials = testimonials.filter(t => t.isApproved === approved);
     }
-    
-    return await query.orderBy(desc(testimonials.createdAt));
+    return testimonials.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   async getTestimonial(id: string): Promise<Testimonial | undefined> {
-    const [testimonial] = await db.select().from(testimonials).where(eq(testimonials.id, id));
-    return testimonial || undefined;
+    return this.testimonials.get(id);
   }
 
   async createTestimonial(insertTestimonial: InsertTestimonial): Promise<Testimonial> {
-    const [testimonial] = await db.insert(testimonials).values(insertTestimonial).returning();
+    const id = randomUUID();
+    const testimonial: Testimonial = {
+      ...insertTestimonial,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.testimonials.set(id, testimonial);
     return testimonial;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();

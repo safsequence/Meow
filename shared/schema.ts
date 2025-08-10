@@ -12,7 +12,6 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   phone: text("phone"),
   address: jsonb("address"),
-  role: text("role").default("user"), // user, admin
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

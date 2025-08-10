@@ -16,8 +16,6 @@ import { z } from 'zod';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/layout/header';
-import { useAuth } from '@/hooks/use-auth';
-import { useLocation } from 'wouter';
 
 // Form validation schema
 const productFormSchema = z.object({
@@ -43,30 +41,6 @@ export default function AdminProductsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const { toast } = useToast();
-  const { user, loading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  // Redirect if user is not admin
-  if (!loading && (!user || user.role !== 'admin')) {
-    toast({
-      title: 'Access Denied',
-      description: 'You need admin privileges to access this page.',
-      variant: 'destructive',
-    });
-    setLocation('/');
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#26732d] mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Fetch products, categories, and brands
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({

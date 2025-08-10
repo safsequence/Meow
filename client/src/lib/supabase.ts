@@ -27,7 +27,6 @@ export type AuthUser = {
   id: string
   email: string
   name?: string
-  role?: string
 }
 
 export async function signUp(email: string, password: string) {

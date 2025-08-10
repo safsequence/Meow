@@ -163,14 +163,6 @@ export default function Header() {
               {user ? (
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-700">Welcome, {user.email?.split('@')[0]}</span>
-                  {user.role === 'admin' && (
-                    <Link href="/admin/products">
-                      <Button variant="ghost" size="sm" className="text-[#26732d] hover:bg-green-50 border border-[#26732d]">
-                        <User size={16} />
-                        <span className="ml-1">Admin Panel</span>
-                      </Button>
-                    </Link>
-                  )}
                   <Button variant="ghost" size="sm" className="text-gray-700 hover:text-[#26732d]" onClick={handleSignOut}>
                     <LogOut size={18} />
                     <span className="ml-1">Sign Out</span>

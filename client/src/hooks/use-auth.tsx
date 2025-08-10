@@ -20,8 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user ? {
         id: user.id,
         email: user.email!,
-        name: user.user_metadata?.name,
-        role: user.user_metadata?.role
+        name: user.user_metadata?.name
       } : null)
       setLoading(false)
     })
