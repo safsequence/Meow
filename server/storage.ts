@@ -80,6 +80,24 @@ export class MemStorage implements IStorage {
   }
 
   private initializeSampleData() {
+    // Admin user
+    const adminUser: User = {
+      id: randomUUID(),
+      username: "admin",
+      password: "123",
+      email: "123@gmail.com",
+      firstName: "Admin",
+      lastName: "User",
+      phone: null,
+      address: null,
+      role: "admin",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.users.set(adminUser.id, adminUser);
+    
     // Sample categories
     const catFoodCategory: Category = {
       id: randomUUID(),
